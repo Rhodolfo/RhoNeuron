@@ -9,29 +9,33 @@ object neurons {
   type Layer = Array[Neuron]
   def Layer(xs: Neuron*) = Array(xs: _*)
 
-  // Basic neuron classes
+  /* A neuron is an object that processes a collection of Signals
+   * through weights, bias and an activator function */
   abstract class Neuron(w: Signals, b: Real) {
     def argument(x: Signals): Real = {
       if (w.size != x.size) throw new Error("weights and x must be same size")
       else (w zip x).map(z => z._1*z._2).reduce(_+_) + b
     }
-    def process(z: Real): Real
-    def apply(x: Signals): Real = process(argument(x))
+    def activator(z: Real): Real
+    def apply(x: Signals): Real = activator(argument(x))
     override def toString(): String = {
       val ws = w.foldLeft[String]("")((a,b) => if (a.isEmpty) b.toString else a+","+b.toString)
       "Neuron[weights=("+ws+"),bias="+b+"]"
     }
   }
 
+  // Perceptron is just a 0-1 activator
   class Perceptron(w:Signals, b: Real) extends Neuron(w,b) {
-    def process(z: Real): Real = if (z>0) 1 else 0
+    def activator(z: Real): Real = if (z>0) 1 else 0
   }
 
+  // Sigmoid function to make Perceptrons differentiable
   class Sigmoid(w:Signals, b: Real) extends Neuron(w,b) {
-    def process(z: Real): Real = 1/(1+scala.math.exp(-z))
+    def activator(z: Real): Real = 1/(1+scala.math.exp(-z))
   }
 
-  // Neural network
+  /* A neural network is a collection of Neuron Layers,
+   * it can process Signals, the response Signal is the head of the output of forwardProp */
   class Network(layers: List[Layer]) {
 
     override def toString(): String = {
@@ -41,14 +45,13 @@ object neurons {
       "Network of "+layers.size+ " layers:\n"+ls
     }
 
-    def backSweep(x: Signals): List[Signals] = {
+    def forwardProp(x: Signals): List[Signals] = {
       def build(net: List[Layer], acc: List[Signals]): List[Signals] = {
         if (net.isEmpty) acc
         else build(net.tail, net.head.map(neuron => neuron apply acc.head) :: acc)
       }
       build(layers,List(x))
     }
-
 
   }
 

@@ -25,10 +25,10 @@ class NeuralTesting extends FunSuite {
     val out = new Perceptron(Signals(-2.0,1.1),-1.0)
     val layers = List(Layer(top,bot),Layer(out))
     val network = new Network(layers)
-    assert(0===network.backSweep(Signals(0.0,0.0)).head.head)
-    assert(1===network.backSweep(Signals(1.0,0.0)).head.head)
-    assert(1===network.backSweep(Signals(0.0,1.0)).head.head)
-    assert(0===network.backSweep(Signals(1.0,1.0)).head.head)
+    assert(0===network.forwardProp(Signals(0.0,0.0)).head.head)
+    assert(1===network.forwardProp(Signals(1.0,0.0)).head.head)
+    assert(1===network.forwardProp(Signals(0.0,1.0)).head.head)
+    assert(0===network.forwardProp(Signals(1.0,1.0)).head.head)
   }
 
   test("XOR Gate, Sigmoid Network") {
@@ -37,10 +37,10 @@ class NeuralTesting extends FunSuite {
     val out = new Sigmoid(Signals(-1000.0,850.0),0.0)
     val layers = List(Layer(top,bot),Layer(out))
     val network = new Network(layers)
-    assert(0.25>network.backSweep(Signals(0.0,0.0)).head.head)
-    assert(0.75<network.backSweep(Signals(1.0,0.0)).head.head)
-    assert(0.75<network.backSweep(Signals(0.0,1.0)).head.head)
-    assert(0.25>network.backSweep(Signals(1.0,1.0)).head.head)
+    assert(0.25>network.forwardProp(Signals(0.0,0.0)).head.head)
+    assert(0.75<network.forwardProp(Signals(1.0,0.0)).head.head)
+    assert(0.75<network.forwardProp(Signals(0.0,1.0)).head.head)
+    assert(0.25>network.forwardProp(Signals(1.0,1.0)).head.head)
   }
 
 }
