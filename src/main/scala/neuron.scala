@@ -25,13 +25,19 @@ object neurons {
   }
 
   // Perceptron is just a 0-1 activator
-  class Perceptron(w:Signals, b: Real) extends Neuron(w,b) {
+  case class Perceptron(w:Signals, b: Real) extends Neuron(w,b) {
     def activator(z: Real): Real = if (z>0) 1 else 0
   }
 
   // Sigmoid function to make Perceptrons differentiable
-  class Sigmoid(w:Signals, b: Real) extends Neuron(w,b) {
+  case class Sigmoid(w:Signals, b: Real) extends Neuron(w,b) {
     def activator(z: Real): Real = 1/(1+scala.math.exp(-z))
+  }
+
+  /* Differentiable trait */
+  trait Differentiable {
+    def prepare(x: Signals): List[Real]
+    def backProp(x: Signals): List[Real]
   }
 
   /* A neural network is a collection of Neuron Layers,
@@ -51,6 +57,11 @@ object neurons {
         else build(net.tail, net.head.map(neuron => neuron apply acc.head) :: acc)
       }
       build(layers,List(x))
+    }
+
+    def predict(x: Signals): Signals = {
+      val signals = forwardProp(x)
+      signals.head
     }
 
   }
