@@ -42,6 +42,14 @@ object networks {
 
 
 
+  /* Method for trainable networks */
+  trait Trainable {
+    def train(throughputs: Traversable[(Signals,Signals)], 
+      tolerance: Real = 1e-2, maxIter: Int = 100): Network
+  }
+
+
+
   /* More methods for differentiable activators */
   trait Differentiable {
     def dactivator_dargument(x: Real): Real 
@@ -54,8 +62,65 @@ object networks {
   trait QuadraticCost {
     def quadCost(prediction: Signals, target: Signals): Real = {
       import scala.math.pow
-      0.5*sum_vectors(prediction,target.map(-_)).reduce(pow(_,2)+pow(_,2))
+      0.5*sum_vectors(prediction,target.map(-_)).map(pow(_,2)).sum
     }
+  }
+
+
+  /* Steepest descent */ 
+  abstract class SteepestDescent(layers: Array[Layer]) extends Network(layers) with Differentiable {
+
+    /* Calculation of gradients by biases and weights
+     * aL = output of layer L
+     * wL = weights of layer L
+     * bL = biases of layer L
+     * zL = wL*a(L-1) + bL
+     * deltaL = dC/dzL
+     * dC/dbL = deltaL
+     * dC/dwL = a(L-1)*deltaL
+    */
+    def computeGradients(input: Signals, target: Signals): 
+    (Real,Array[Signals],Array[Array[Signals]]) = {
+      def iter(azArray: Array[Throughput], wArray: Array[Array[Signals]], acc: Array[Signals], 
+      flag: Boolean = false): Array[Signals] = {
+        if (azArray.isEmpty) acc
+        else {
+          val (aL,zL) = azArray.last.unzip
+          val wL = wArray.last
+          val pastDelta = if (acc.isEmpty) Signals(0.0) else acc.head
+          val factor = {
+            if (flag) dcost_dsignal(aL,target)
+            else mat_product(wL.transpose,pastDelta)
+          }
+          val sigp = zL map dactivator_dargument
+          val prod = had_product(factor,sigp)
+          if (flag) iter(azArray.init, wArray, Array(prod))
+          else iter(azArray.init, wArray.init, Array(prod) ++ acc)
+        }
+      }
+      val matrix = layers.map(_.weights)
+      val throughputs = forwardProp(input)
+      val tcost  = cost(throughputs.last.unzip._2,target)
+      val deltas = iter(throughputs.tail,matrix,Array(),true)
+      val weightGradient = (deltas zip throughputs.init.map(_.unzip._1)).map(
+        (pair: (Signals,Signals)) => pair match {
+          case(deltaL: Signals, arrayL: Signals) => 
+            deltaL.map(delta => arrayL.map(_*delta))
+        }
+      )
+      if (throughputs.tail.size==matrix.size) (tcost,deltas,weightGradient)
+      else throw new Error("Something went wrong")
+    }
+
+    def train(trainData: List[(Signals,Signals)],
+    eta: Real = 1e-1, tolerance: Real = 1e-2, maxIter: Int = 100): Network = {
+      def singleTarget(input: Signals, target: Signals): (Real,Array[Signals],Array[Array[Signals]]) = {
+        computeGradients(input,target)
+      }
+      ???
+    }
+ 
+
   }
 
 
@@ -69,40 +134,12 @@ object networks {
 
 
   /* Sigmoid */
-  class SigmoidNetwork(layers: Array[Layer]) extends Network(layers) 
-  with Differentiable with QuadraticCost {
-
+  class SigmoidNetwork(layers: Array[Layer]) extends SteepestDescent(layers) with QuadraticCost {
     // Defining basic abstract methods
     def activator(x: Real): Real = 1 / (1 + scala.math.exp(-x))
     def dactivator_dargument(x: Real): Real = activator(x)*(1 - activator(x))
     def cost(prediction: Signals, target: Signals): Real = quadCost(prediction,target)
     def dcost_dsignal(a: Signals, target: Signals): Signals = sum_vectors(a,target.map(-_))
-
-    /* Steepest descent */
-    def deltas(x: Signals, target: Signals): (Real,Array[Signals]) = {
-      def iter(azArray: Array[Throughput], wArray: Array[Array[Signals]], acc: Array[Signals], 
-      flag: Boolean = false): Array[Signals] = {
-        if (wArray.isEmpty) acc
-        else {
-          val (aL,zL) = azArray.last.unzip
-          val wL = wArray.last
-          val pastDelta = if (acc.isEmpty) Signals(0.0) else acc.head
-          val factor = {
-            if (flag) dcost_dsignal(aL,target)
-            else mat_product(wL.transpose,pastDelta)
-          }
-          val sigp = zL map dactivator_dargument
-          val prod = had_product(factor,sigp)
-          iter(azArray.init, wArray.init, Array(prod) ++ acc)
-        }
-      }
-      val throughputs = forwardProp(x)
-      val matrix = layers.map(_.weights)
-      val tcost  = cost(throughputs.last.unzip._2,target)
-      val deltas = iter(throughputs,matrix,Array(),true)
-      (tcost,deltas)
-    }
-
   }
 
 

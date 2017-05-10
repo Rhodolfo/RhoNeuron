@@ -22,15 +22,21 @@ object basics {
   }
 
   /* Neuron layer class */
-  case class Layer(init: Neuron*) {
-    val neurons = Array(init: _*)
-    val weights = neurons.map(_.w)
-    val biases  = neurons.map(_.b)
+  case class Layer(val weights: Array[Signals], val biases: Signals) {
+    def this(pair: Array[(Signals,Real)]) = this(pair.unzip._1,pair.unzip._2)
+    val size: Int = {
+      if (weights.size==biases.size) weights.size 
+      else throw new Error("Weight matrix and biases must be compatible size")
+    }
     def apply(x: Signals): Signals = sum_vectors(mat_product(weights,x),biases)
     override def toString(): String = {
-      def concat(s:String)(a:String,b:String): String = if (a.isEmpty) b else a+s+b
-      neurons.foldLeft[String]("")((a,b)=>concat(",")(a,b.toString))
+     ???
     }
   }
+
+  object Layer {
+    def apply(pair: Array[(Signals,Real)]) = new Layer(pair)
+  }
+
 
 }

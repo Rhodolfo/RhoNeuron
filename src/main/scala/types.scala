@@ -9,9 +9,18 @@ object types {
   def Signals(xs: Real*) = Array(xs: _*)
 
   // Auiliary operations
-  def had_product(x: Signals, y: Signals): Signals = (x zip y).map(z => z._1*z._2)
-  def dot_product(x: Signals, y: Signals): Real = had_product(x,y).reduce(_+_)
+  def had_product(x: Signals, y: Signals): Signals = {
+    if (x.size == y.size) (x zip y).map(z => z._1*z._2)
+    else throw new Error("Signals must be equal size, "+x.size+"!="+y.size)
+  }
+  def dot_product(x: Signals, y: Signals): Real = {
+    if (x.size == y.size) had_product(x,y).reduce(_+_)
+    else throw new Error("Signals must be equal size, "+x.size+"!="+y.size)
+  }
   def mat_product(m: Array[Signals], x: Signals): Signals = m.map(dot_product(_,x))
-  def sum_vectors(x: Signals, y: Signals): Signals = (x zip y).map(z => z._1+z._2)
+  def sum_vectors(x: Signals, y: Signals): Signals = {
+    if (x.size == y.size) (x zip y).map(z => z._1+z._2)
+    else throw new Error("Signals must be equal size, "+x.size+"!="+y.size)
+  } 
 
 }
