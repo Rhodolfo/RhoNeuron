@@ -22,5 +22,9 @@ object types {
     if (x.size == y.size) (x zip y).map(z => z._1+z._2)
     else throw new Error("Signals must be equal size, "+x.size+"!="+y.size)
   } 
+  def sum_matrices(x: Array[Signals], y: Array[Signals]): Array[Signals] = {
+    if (x.size == y.size) (x zip y).map(z => sum_vectors(z._1,z._2))
+    else throw new Error("Matrices must be equal size, "+x.size+"!="+y.size)
+  }
 
 }

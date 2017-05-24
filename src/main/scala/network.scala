@@ -2,7 +2,8 @@ package com.rho.neural
 
 object networks {
 
-  import com.rho.neural.types.{Real, Signals, Throughput, sum_vectors, mat_product, had_product}
+  import com.rho.neural.types.{Real, Signals, Throughput}
+  import com.rho.neural.types.{sum_vectors, sum_matrices, mat_product, had_product}
   import com.rho.neural.basics.{Neuron, Layer}
 
   /* A neural network is a collection of Neuron Layers,
@@ -44,8 +45,8 @@ object networks {
 
   /* Method for trainable networks */
   trait Trainable {
-    def train(throughputs: Traversable[(Signals,Signals)], 
-      tolerance: Real = 1e-2, maxIter: Int = 100): Network
+    def train(throughputs: List[(Signals,Signals)], 
+      tolerance: Real, maxIter: Int): Network
   }
 
 
@@ -112,12 +113,41 @@ object networks {
       else throw new Error("Something went wrong")
     }
 
+    private type GradPut = (Real,Array[Signals],Array[Array[Signals]])
+    private def sumGradPut(a: GradPut, b: GradPut): GradPut = {
+      val (ae,ad,aw) = a
+      val (be,bd,bw) = b
+      val se = ae+be
+      val sd = (ad zip bd).map(p => sum_vectors(p._1,p._2))
+      val sw = (aw zip bw).map(p => sum_matrices(p._1,p._2))
+      (se,sd,sw)
+    }
+    def sumGradients(trainData: List[(Signals,Signals)]): GradPut = {
+      def iter(tData: List[(Signals,Signals)], acc: GradPut, init: Boolean = false): GradPut = {
+        if (tData.isEmpty) acc
+        else {
+          val (input,target) = tData.head
+          if (init) iter(tData.tail, computeGradients(input,target))
+          else iter(tData.tail, sumGradPut(acc,computeGradients(input,target)))
+        }
+      }
+      val zero = (0.0,Array(Signals(0.0)),Array(Array(Signals(0.0))))
+      iter(trainData, zero, true)
+    }
+
     def train(trainData: List[(Signals,Signals)],
     eta: Real = 1e-1, tolerance: Real = 1e-2, maxIter: Int = 100): Network = {
-      def singleTarget(input: Signals, target: Signals): (Real,Array[Signals],Array[Array[Signals]]) = {
-        computeGradients(input,target)
+      def iter(net: SteepestDescent, nIter: Int): SteepestDescent = { 
+        val (error, delSum, wDelSum) = net.sumGradients(trainData)
+        val isGoodEnough: Boolean = {
+          if (nIter >= maxIter) true
+          else if (error <= tolerance) true
+          else false
+        }
+        if (isGoodEnough) ???
+        else iter(net, nIter + 1)
       }
-      ???
+      iter(this, 0)
     }
  
 
