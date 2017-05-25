@@ -48,11 +48,20 @@ class NeuralTesting extends FunSuite {
     }
   }
   
-  test("Deltas") {
-    val badlayer1 = Array( (Signals(1.0,-7.0),0.0), (Signals(6.0,-4.0),0.0) )
-    val badlayer2 = Array( (Signals(-1.0,23.0),0.0) ) 
-    val badlayers = Array(Layer(badlayer1),Layer(badlayer2))
-    val badnetwork = new SigmoidNetwork(badlayers) 
+  new XOR_Gate {
+    test("XOR Gate, Training") {
+      val badlayer1 = layer1 //Array( (Signals(1.3,-2.0),0.0), (Signals(6.0,-4.0),0.0) )
+      val badlayer2 = layer2 //Array( (Signals(-1.0,0.0),0.0) ) 
+      val badlayers = Array(Layer(badlayer1),Layer(badlayer2))
+      val badnetwork = new SigmoidNetwork(badlayers) 
+      val newnetwork = badnetwork.train(trainData,0.9,0.01,1e6.toInt)
+      trainData.unzip._1.foreach { data => 
+        println("Triple")
+        println(badnetwork.predict(data).head)
+        println(newnetwork.predict(data).head)
+        println(network.predict(data).head)
+      }
+    }
   }
 
 }

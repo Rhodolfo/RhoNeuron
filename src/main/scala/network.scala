@@ -71,6 +71,8 @@ object networks {
   /* Steepest descent */ 
   abstract class SteepestDescent(layers: Array[Layer]) extends Network(layers) with Differentiable {
 
+    def makeNew(layers: Array[Layer]): SteepestDescent
+
     /* Calculation of gradients by biases and weights
      * aL = output of layer L
      * wL = weights of layer L
@@ -139,12 +141,14 @@ object networks {
     eta: Real = 1e-1, tolerance: Real = 1e-2, maxIter: Int = 100): Network = {
       def iter(net: SteepestDescent, nIter: Int): SteepestDescent = { 
         val (error, delSum, wDelSum) = net.sumGradients(trainData)
-        val isGoodEnough: Boolean = {
+        val dellayers = (wDelSum zip delSum).map(e => Layer(e._1,e._2)*(eta))
+        val newlayers = (net.layers zip dellayers).map(p => p._1 + p._2)
+        def isGoodEnough(): Boolean = {
           if (nIter >= maxIter) true
           else if (error <= tolerance) true
           else false
         }
-        if (isGoodEnough) ???
+        if (isGoodEnough) makeNew(newlayers)
         else iter(net, nIter + 1)
       }
       iter(this, 0)
@@ -166,6 +170,7 @@ object networks {
   /* Sigmoid */
   class SigmoidNetwork(layers: Array[Layer]) extends SteepestDescent(layers) with QuadraticCost {
     // Defining basic abstract methods
+    def makeNew(layers: Array[Layer]): SigmoidNetwork = new SigmoidNetwork(layers)
     def activator(x: Real): Real = 1 / (1 + scala.math.exp(-x))
     def dactivator_dargument(x: Real): Real = activator(x)*(1 - activator(x))
     def cost(prediction: Signals, target: Signals): Real = quadCost(prediction,target)

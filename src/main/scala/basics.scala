@@ -2,7 +2,7 @@ package com.rho.neural
 
 object basics {
 
-  import com.rho.neural.types.{Signals, Real, sum_vectors, mat_product}
+  import com.rho.neural.types.{Signals, Real, sum_vectors, sum_matrices, mat_product}
 
   /* A neuron is an object that processes a collection of Signals
    * through weights, bias. 
@@ -24,13 +24,23 @@ object basics {
   /* Neuron layer class */
   case class Layer(val weights: Array[Signals], val biases: Signals) {
     def this(pair: Array[(Signals,Real)]) = this(pair.unzip._1,pair.unzip._2)
-    val size: Int = {
+    def size(): Int = {
       if (weights.size==biases.size) weights.size 
       else throw new Error("Weight matrix and biases must be compatible size")
     }
+    def *(scalar: Real) = {
+      Layer(weights.map(row => row.map(_*scalar)), biases.map(_*scalar))
+    }
+    def +(other: Layer) = {
+      if (this.size==other.size) {
+        Layer(sum_matrices(this.weights,other.weights), sum_vectors(this.biases, other.biases))
+      } else {
+        throw new Error("Layers must be same size to sum")
+      }
+    }
     def apply(x: Signals): Signals = sum_vectors(mat_product(weights,x),biases)
     override def toString(): String = {
-     ???
+      "Stub method. Layer of size "+size
     }
   }
 
